@@ -342,6 +342,45 @@
       box-shadow: 0 0 15px var(--neon-glow);
     }
 
+    /* PAGINATION STYLES */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .page-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 600;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: rgba(0, 240, 255, 0.2);
+      border-color: var(--neon-accent);
+      color: var(--neon-accent);
+    }
+
+    .page-btn.active {
+      background: var(--neon-accent);
+      color: #000;
+      border-color: var(--neon-accent);
+      box-shadow: 0 0 10px var(--neon-glow);
+    }
+
+    .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* ==========================================================================
        5. GAME DETAIL VIEW & INTEGRATED CPA UNLOCK SECTION
        ========================================================================== */
@@ -586,7 +625,7 @@
 
   <!-- MAIN CONTENT VIEWS -->
   <main>
-    
+
     <!-- HOME VIEW -->
     <section id="view-home" class="view active-view">
       <div class="hero">
@@ -600,17 +639,24 @@
 
       <h2 class="section-title">Featured Games</h2>
       <div class="games-grid" id="featuredGrid"></div>
+      <div style="text-align: center; margin-top: 2rem;">
+        <button class="btn btn-secondary" onclick="navigateTo('games')">View All Games &rarr;</button>
+      </div>
     </section>
 
     <!-- GAMES DIRECTORY VIEW -->
     <section id="view-games" class="view">
       <h1 class="section-title">Explore Games Directory</h1>
-      
+
       <div class="search-controls">
         <input type="text" id="searchInput" class="search-input" placeholder="Search games by name or description..." oninput="handleSearch()">
       </div>
 
+      <!-- Grid fin ki bano les jeux -->
       <div class="games-grid" id="directoryGrid"></div>
+      
+      <!-- Container dyal Pagination (les pages) -->
+      <div id="paginationControls"></div>
     </section>
 
     <!-- GUIDES VIEW -->
@@ -681,6 +727,7 @@
 
   <!-- JAVASCRIPT -->
   <script>
+    // Zedt lik games jdad hna bach y3mro les pages
     const gamesData = [
       {
         id: "Practical Basketball",
@@ -770,10 +817,80 @@
           tips: ["Instant Steal.", "Anti Hit.", "Noclip."]
         }
       },
-      
+      /* --- GAMES JDAD ZEDTHOM LIK BASH YBANO F LES PAGES L'KHRIN --- */
+      {
+        id: "Ball VS Ball",
+        name: "Ball VS Ball",
+        image: "https://i.postimg.cc/vHh7YBHM/images-(21).jpg",
+        platforms: ["PC", "iOS", "Android"],
+        description: "Pick a ball. Watch it fight!.",
+        guide: {
+          about: "Pick a ball. Watch it fight!.",
+          tips: ["Auto Duel.", "Free pick.", "Auto claim mail."]
+        }
+      },
+      {
+        id: "Huss Valley",
+        name: "Huss Valley",
+        image: "https://i.postimg.cc/0jMg83DB/no-Filter-(6).webp",
+        platforms: ["PC", "iOS", "Android"],
+        description: "Huss Valley.",
+        guide: {
+          about: "Huss Valley.",
+          tips: ["AutoDodge.", "SpeedHack.", "AutoCatch."]
+        }
+      },
+      {
+        id: "Ride A Pet",
+        name: "Ride A Pet",
+        image: "https://i.postimg.cc/jdt93LkZ/no-Filter-(7).webp",
+        platforms: ["PC", "iOS", "Android"],
+        description: "Ride A Pet!.",
+        guide: {
+          about: "Ride A Pet!.",
+          tips: ["Auto Pickup.", "Rarity Filter.", "Rarity Filter."]
+        }
+      },
+      {
+        id: "Steal An Egg",
+        name: "Steal An Egg",
+        image: "https://i.postimg.cc/gk2s6R7Y/no-Filter-(8).webp",
+        platforms: ["PC", "iOS", "Android"],
+        description: "Welcome to Steal An Egg!.",
+        guide: {
+          about: "Welcome to Steal An Egg!.",
+          tips: ["Egg ESP.", "Auto Steal.", "Auto Hatch."]
+        }
+      },
+      {
+        id: "Slayers 2",
+        name: "Slayers 2",
+        image: "https://i.postimg.cc/cHdwGGyW/no-Filter-(9).webp",
+        platforms: ["PC", "iOS", "Android"],
+        description: "Mobile and Console users can edit their Aim Assist sensitivity in settings!",
+        guide: {
+          about: "Mobile and Console users can edit their Aim Assist sensitivity in settings!.",
+          tips: ["Auto Queue.", "Ranked Queue.", "Auto Join World."]
+        }
+      },
+      {
+        id: "Adopt Me",
+        name: "Adopt Me",
+        image: "https://i.postimg.cc/MK2bvtGg/no-Filter-(10).webp",
+        platforms: ["PC", "iOS", "Android"],
+        description: "Axon Hub is a Adopt Me script built for auto farm, ESP, combat, movement and easier grinding.",
+        guide: {
+          about: "Get rich in Adopt Me without playing. This script automatically fulfills your pet's needs to farm bucks.",
+          tips: ["Auto Tasks.", "Auto Buy Eggs.", " Master Auto."]
+        }
+      }
     ];
 
     let searchQuery = '';
+    
+    // Variables dyal Pagination
+    let currentPage = 1;
+    const itemsPerPage = 8; // ch7al mn jeu bghiti f kol page (t9der tbdlha)
 
     function navigateTo(viewId) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
@@ -794,7 +911,7 @@
 
     function renderCard(game) {
       const platformsHTML = game.platforms.map(p => `<span class="platform-tag">${p}</span>`).join('');
-      
+
       return `
         <div class="game-card glass" onclick="openGameDetail('${game.id}')">
           <div class="card-img-container">
@@ -813,32 +930,86 @@
     function renderHome() {
       const featuredGrid = document.getElementById('featuredGrid');
       if (featuredGrid) {
-        featuredGrid.innerHTML = gamesData.map(renderCard).join('');
+        // F page Home gha nbanou gha 4 dyal les jeux lowlin bash may3mrch bzf
+        featuredGrid.innerHTML = gamesData.slice(0, 4).map(renderCard).join('');
       }
     }
 
+    // Fonction jdida dyal Pagination
     function renderDirectory() {
       const directoryGrid = document.getElementById('directoryGrid');
+      const paginationControls = document.getElementById('paginationControls');
       if (!directoryGrid) return;
 
+      // Filtrer les jeux 3la 7sab search
       const filtered = gamesData.filter(game => {
         return game.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                game.description.toLowerCase().includes(searchQuery.toLowerCase());
       });
 
+      // Hsab ch7al mn page 3ndna
+      const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+      // ila drti search u l9a chwia dyal les jeux, kiy redna l page 1
+      if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+      if (totalPages === 0) currentPage = 1;
+
+      // 9te3 les jeux dyal had la page
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const paginatedItems = filtered.slice(startIndex, startIndex + itemsPerPage);
+
       if (filtered.length === 0) {
         directoryGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">No games found matching your search.</div>`;
+        paginationControls.innerHTML = '';
       } else {
-        directoryGrid.innerHTML = filtered.map(renderCard).join('');
+        directoryGrid.innerHTML = paginatedItems.map(renderCard).join('');
+        renderPagination(totalPages);
       }
+    }
+
+    function renderPagination(totalPages) {
+      const paginationControls = document.getElementById('paginationControls');
+      
+      // Ila kant ghir page we7da, maybnouch les boutons
+      if (totalPages <= 1) {
+        paginationControls.innerHTML = '';
+        return;
+      }
+
+      let html = `<div class="pagination">`;
+      
+      // Bouton Précédent (Prev)
+      html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">&laquo; Prev</button>`;
+      
+      // Les numéros dyal pages
+      for (let i = 1; i <= totalPages; i++) {
+        html += `<button class="page-btn ${currentPage === i ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+      }
+      
+      // Bouton Suivant (Next)
+      html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">Next &raquo;</button>`;
+      
+      html += `</div>`;
+      paginationControls.innerHTML = html;
+    }
+
+    function changePage(page) {
+      currentPage = page;
+      renderDirectory();
+      // Ytle3 lfou9 mni tbedel la page
+      const gamesView = document.getElementById('view-games');
+      const headerOffset = 80;
+      const elementPosition = gamesView.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
 
     function handleSearch() {
       searchQuery = document.getElementById('searchInput').value;
+      currentPage = 1; // nredoh l page 1 mni kiy dir search jdid
       renderDirectory();
     }
 
-    // Function li ghadi t-gérer l'étape dyal Username 
     function processUsername() {
       const usernameInput = document.getElementById('gameUsername');
       const username = usernameInput.value.trim();
@@ -850,25 +1021,16 @@
         return;
       }
 
-      // Animation sghira dyal loading
       btn.innerText = 'Connecting...';
       btn.style.opacity = '0.7';
       usernameInput.disabled = true;
       btn.disabled = true;
 
-      // Mor 1.5 seconds gha ytla3 locker
       setTimeout(() => {
-        // Khbi l'étape dyal l'input
         document.getElementById('step-username').classList.add('hidden');
-        
-        // Biyen l'étape dyal locker
         document.getElementById('step-locker').classList.remove('hidden');
-        
-        // Bdel l'ktaba li lfo9
         document.getElementById('locker-title').innerText = 'Verification Required';
         document.getElementById('locker-desc').innerText = 'Complete the required verification action below to unlock the content for your account.';
-        
-        // Biyen chkon li mconnecté
         document.getElementById('connected-user').innerHTML = `&#10004; Connected as: <strong>${username}</strong>`;
       }, 1500);
     }
@@ -879,7 +1041,7 @@
 
       const detailContent = document.getElementById('detailContent');
       const platformsHTML = game.platforms.map(p => `<span class="platform-tag">${p}</span>`).join('');
-      
+
       const relatedGames = gamesData.filter(g => g.id !== game.id).slice(0, 3).map(renderCard).join('');
 
       detailContent.innerHTML = `
@@ -908,23 +1070,21 @@
             <span class="unlock-badge">CONTINUE</span>
             <h3 id="locker-title">Enter Your Username</h3>
             <p id="locker-desc">Please enter your ${game.name} username or ID to continue to the full Script.</p>
-            
-            <!-- STEP 1: Username Form -->
+
             <div id="step-username" class="username-step">
               <input type="text" id="gameUsername" class="username-input" placeholder="Your Username / ID" required>
               <button id="connectBtn" class="btn btn-primary" onclick="processUsername()">Connect Account</button>
             </div>
 
-            <!-- STEP 2: Content Locker (Hidden Initially) -->
             <div id="step-locker" class="hidden">
               <div id="connected-user" class="connected-user-text"></div>
               <div class="ogads-locker-box">
                 <h3 style="color: var(--text-main); margin-bottom: 15px;">Anti-Bot Verification</h3>
                 <p style="margin-bottom: 20px;">Please complete a quick verification to unlock your script.</p>
-                <a href="https://wclive.club/cl/i/l7vq16" target="_blank" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 15px; text-decoration: none;">Verify Now & Unlock</a>
+                <a href="https://appcomplete.org/cl/i/l7vq16" target="_blank" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 15px; text-decoration: none;">Verify Now & Unlock</a>
               </div>
             </div>
-            
+
           </div>
         </article>
 
